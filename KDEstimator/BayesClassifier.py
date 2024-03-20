@@ -105,8 +105,7 @@ class BayesClassifier():
                 P = np.exp(-0.5 * ( (x - μ).T @ inv(Σ) @  (x- μ))) / scale
             case 'KDE':               
                 # TODO 2: Transform the data x using the kth fitted KDE instance
-                self.kde_list[k].transform(x)
-                P = self.kde_list[k].P(x)
+                P= self.kde_list[k].transform(x)
             case 'GMM':
                 P = None
                 # TODO 7: Raise a NotImplementedError since Gaussian Mixture Models will still be covered in the future
@@ -129,9 +128,11 @@ class BayesClassifier():
     # Transforms probabilities into predicted labels by maximizing probability of correctness
     def predict(self, x_val:np.ndarray)->np.ndarray:
         y_pred_prob = self.predict_proba(x_val)
+       
         y_pred_inds = np.argmax(y_pred_prob, axis=1)
         # replace each prediction with label in self.labels
         y_pred = self.labels[y_pred_inds]
+        
         return y_pred
     
     # Computes accuracy

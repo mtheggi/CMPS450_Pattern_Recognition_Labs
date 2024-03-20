@@ -47,7 +47,7 @@ class KDEstimator():
             self.h = self.bandwidth
 
         return self
-    
+    # O(M*N)
     def g(self, x): # xvect from 1 to M 
         if self.bump == 'Gauss':
             N = self.N
@@ -67,13 +67,13 @@ class KDEstimator():
             print(N)
             return N 
 
-    
+    #O(M*N)
     def ϕ(self, x):
         h, N = self.h, self.N
         # TODO 7: Implement ϕ as defined earlier
         scale = 1/(h**N)
         return scale * self.g(x/h)
-    
+    #O()
     def P(self, x):
         scale = 1/(self.M)
         xₘ = self.x_train
