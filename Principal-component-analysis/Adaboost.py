@@ -12,36 +12,37 @@ class Adaboost:
         m = x_train.shape[0]
         
         # TODO 1: Initialize the weights of each point in the training set to 1/m
-        W = None                            # should have shape (m,)
+        W =   np.full((m,) , 1/m)                         # should have shape (m,)
 
         # loop over the boosting iterations 
         for t, week_clf in enumerate(self.week_clfs):
 
             # TODO 2: fit the current week classifier on the weighted training data
             # read the docs of the fit method in sklearn.tree.DecisionTreeClassifier to see how the weights can be passed
-        
+            week_clf.fit(x_train , y_train , sample_weight=W)
             # TODO 3: Compute the indicator function Iₜ for each point. This is a (m,) array of 0s and 1s.
-            hₜ = week_clf.predict
-            Iₜ = None
+            hₜ = week_clf.predict(x_train)
+            Iₜ = np.array(hₜ != y_train, dtype=int) 
             
             # TODO 4: Use the indicator function Iₜ in boolean masking to compute the error
-            errₜ =  None
-
+            errₜ =  np.sum(W*Iₜ)   
             # TODO 5: Compute the estimator coefficient αₜ
-            αₜ = None
+            
+            αₜ = np.log((1-errₜ)/errₜ) 
+
             self.αs.append(αₜ)                  
 
             # TODO 6: Update the weights using the estimator coefficient αₜ and the indicator function Iₜ
-            W = None
+            W = W * np.exp(αₜ * Iₜ)
             
             # TODO 7: Normalize the weights
-            W = None
+            W = W / np.sum(W)
 
         return self
     
     def predict(self, x_val):
         # TODO 8: Compute a (T, m) array of predictions that maps each estimator to its predictions of x_val weighted by its alpha
-        weighted_opinions = np.array(None)     # Use zip
+        weighted_opinions = np.array([alpha * weekClfs.predict(x_val) for alpha, weekClfs in zip(self.αs , self.week_clfs)])    # Use zip
         # Now have T evaluations of x_val each weighted (multiplied) by the corresponding alpha, 
         # so as per the formula we only need to take the sign of the sum of the different evaluations
         return np.sign(np.sum(weighted_opinions, axis=0))
