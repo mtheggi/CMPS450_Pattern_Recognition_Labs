@@ -8,21 +8,22 @@ class Bagging:
         # Hyperparameters
         self.n_estimators = n_estimators    # the number of estimators (i.e., T)
         self.max_samples = max_samples      # the ratio determining the size of the bootstrap samples D_1, D_2,..,D_T
-        
+        self.num_labels = None              # the number of unique labels in the dataset
         # Reproducibility
         self.random_state = random_state
         
         # TODO 1: Initialize the estimators by cloning the given model 
-        self.estimators = None
+        self.estimators = [clone(model) for i in range (0  , n_estimators)]
+
 
     # We will implement this once and then use it T times to generate D_1, D_2,..,D_T in training
     def _get_random_subset(self, x_data, y_data):        
         # TODO 2: Compute sample_size given dataset size and max_samples
-        sample_size = None
+        sample_size = np.ceil(x_data.shape[0] * self.max_samples).astype(int) 
 
         # TODO 3: Generating `sample_size` indices from 0 to x_data size -1 with replacement
         # Use np.random.choice
-        rand_inds = None
+        rand_inds = np.random.choice(x_data.shape[0], sample_size, replace=True)
 
         # Use the random_inds to form the sample D_t from D
         x_data_s = x_data[rand_inds]
@@ -35,12 +36,12 @@ class Bagging:
         self.num_labels  = np.unique(y_data)
 
         for t, estimator in enumerate(self.estimators):
-            # Set random seem for _get_random_subset. We have to add t so next iteration its a different D_t.
+            # Set random seed for _get_random_subset. We have to add t so next iteration its a different D_t.
             np.random.seed(self.random_state + t)  
             # TODO 4: Call _get_random_subset to get D_t
-            x_data_s, y_data_s = None
+            x_data_s, y_data_s = self._get_random_subset(x_data, y_data)
             # TODO 5: Fit model M_t on the random bootstrap sample D_t
-            None
+            estimator.fit(x_data_s, y_data_s)
 
     # Assume y_preds has dims (n_estimators, num_val_points, num_labels)
     # where y_preds[i,j,k] has the probability of the jth point in the validation set being in the kth class assigned by the ith model
@@ -48,19 +49,26 @@ class Bagging:
     def _get_soft_vote(self, y_preds):
         # TODO 6: Apply the soft voting equation presented in the notebook
         # By averaging all probabilities for the same label for each point over the estimators
-        y_pred_mean = None
+        y_pred_mean = np.mean(y_preds, axis=0)
+        
         # TODO 7.0: What's the shape of y_pred_mean now? 
+            #2D array with shape (num_x_vals, num_of_classes).
         # TODO 7.1: Apply argmax over the probabilities to get the most probable class of each point by soft voting
-        y_pred = None
+        y_pred = np.argmax(y_pred_mean, axis=1)
+        """
+        np.argmax(y_pred_mean, axis=1) would return a 1D array where each value is the index of the class with 
+        the highest mean prediction for a given instance.
+        If y_pred_mean is a 2D array with shape (n_samples, n_classes), then np.argmax(y_pred_mean, axis=1) would be a 1D array with shape (n_samples,        
+        """
         return y_pred
 
 
     def predict(self, x_val):
         # TODO 8: Define y_preds as assumed above
-        y_preds = np.empty((None, None, None))
+        y_preds = np.empty((self.n_estimators, x_val.shape[0], self.num_labels))
         for i, estimator in enumerate(self.estimators):
             # TODO 9: Predict the class probabilities for all points with predict_proba
-            y_preds[i] = None
+            y_preds[i] = estimator.predict_proba(x_val)
         y_pred = self._get_soft_vote(y_preds)
         return y_pred
 
