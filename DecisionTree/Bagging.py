@@ -65,7 +65,7 @@ class Bagging:
 
     def predict(self, x_val):
         # TODO 8: Define y_preds as assumed above
-        y_preds = np.empty((self.n_estimators, x_val.shape[0], self.num_labels))
+        y_preds = np.empty((self.n_estimators, x_val.shape[0], self.num_labels.shape[0]))
         for i, estimator in enumerate(self.estimators):
             # TODO 9: Predict the class probabilities for all points with predict_proba
             y_preds[i] = estimator.predict_proba(x_val)
