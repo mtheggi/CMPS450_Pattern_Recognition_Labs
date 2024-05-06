@@ -11,15 +11,15 @@ class ClassificationNeuralNet():
         self.activation = activation
         
         # TODO 1: Define Sigmoid function using Numpy and its derivative  (derive it or search for it)
-        def σ(z): return None        
-        def σࠤ(z): return None                                   # write it in terms of σ
+        def σ(z): return 1 / (1 + np.exp(-z))
+        def σࠤ(z): return σ(z) * (1 - σ(z))   # write it in terms of σ
           
         # TODO 2: Define the ReLU function and its derivative (use Numpy)
-        def relu(z): return None
+        def relu(z): return np.maximum(0, z)
         def reluࠤ(z): return np.greater(z, 0).astype(int)                           # gift
         
         # TODO 3: Set the activation function and its derivative depending on whether activation=='sigmoid' or 'relu'
-        self.h, self.hࠤ = (σ, σࠤ) if None else None
+        self.h, self.hࠤ = (σ, σࠤ) if activation=='sigmoid' else (relu, reluࠤ)
         
         # This is a binary classification NN: output activation must always be Sigmoid
         self.g = σ
@@ -29,10 +29,12 @@ class ClassificationNeuralNet():
         np.random.seed(random_state)
         
         # TODO 4: for each layer except the first, initialize a (n_l, 1) vector for the bias vector with randn
-        self.Bₙ = [np.random.randn(n_l, 1) for n_l in structure[1:]]                # gift     
-        
+        # self.Bₙ = [np.random.randn(n_l, 1) for n_l in structure[1:]]                # gift     
+        self.Bₙ = [np.random.randn(n_l , 1 ) for n_l in structure[1:]]
+
         # TODO 5: for each two layers except the first, initialize (n_l, n_l_prev) matrix for the weight matrix with randn
-        self.Wₙ = None                                        
+        self.Wₙ = [np.random.randn(n_l , n_l_prev)  for n_l , n_l_prev in zip(structure[1:] , structure[:-1])]
+
         # e.g., if structure is [a,b,c,d] then we want Wₙ to hold three weight matrices of dims [b,a] , [c,b] , [d,c] 
         # You must use zip to achieve this in one line: notice it's easy if we loop on [b,c,d] and [a,b,c] 
 
@@ -50,11 +52,13 @@ class ClassificationNeuralNet():
         for l, (b, W) in enumerate(zip(self.Bₙ, self.Wₙ)):          # loop on each layer (after input layer)
             
             # TODO 6: Compute z = WA+b for the current layer l
-            z = None
+            # layer 1 : b = a --> M x 1, w--> N x M, z = w*a + b
+            z = W @ a + b
             
             # TODO 7: Compute a = f(WA+b) for the current layer l
             # Recall we set f(z) as h(z) for all layers except last. For last we set f(z) as g(z). Do this in one line.
-            a = None
+            a = self.g(z) if l == self.num_layers-1 else self.h(z) 
+
             
             if store_outputs:  Zₙ.append(z); Aₙ.append(a)           # store the outputs if feedforward is called from backprop
         
@@ -66,21 +70,25 @@ class ClassificationNeuralNet():
     def backprop(self, xₘ , yₘ):
         # TODO 8: Initialize derivatives of all parameters in the network as zero
         # n subscript refers that this has all derivatives of the network and m subscript that it's only given the sample (xₘ, yₘ)
+        # size = n * 1 ; 
+        #  
+        
         მJⳆმBₙₘ = [np.zeros(b.shape) for b in self.Bₙ]              # gift: ask yourself why b.shape?
-        მJⳆმWₙₘ = None              
+        მJⳆმWₙₘ = [np.zeros(w.shape) for w in self.Wₙ ]
+
 
         # TODO 9: Perform the feedforward pass while storing outputs
-        ŷ, Zₙ, Aₙ = None
+        ŷ, Zₙ, Aₙ = self.feedforward(xₘ, store_outputs=True)
 
         # TODO 10: Perform the backward pass to compute the derivatives for the parameters of each layer
         H = self.num_layers-1                           # index of last layer
         for l in range(H, -1, -1):
             # TODO 10.1: Compute δ (and handle the case where l==H in the same line)
-            δ =  None
+            δ =  (ŷ -  yₘ) if l == H else self.Wₙ[l+1].T @ δ * self.hࠤ(Zₙ[l])
             # TODO 10.2: Compute მJⳆმBₙₘ
-            მJⳆმBₙₘ[l] = None
+            მJⳆმBₙₘ[l] = δ
             # TODO 10.3: Compute მJⳆმWₙₘ (and handle the case where l==0 in the same line)
-            მJⳆმWₙₘ[l] = None
+            მJⳆმWₙₘ[l] =  δ @ Aₙ[l-1].T if l != 0 else δ @ xₘ.T
         
         return (მJⳆმBₙₘ, მJⳆმWₙₘ)
     
@@ -88,24 +96,24 @@ class ClassificationNeuralNet():
 
     def SGD(self, x_batch, y_batch, α):
         # TODO 11: Initialize derivatives of all parameters in the network as zero
-        მJⳆმBₙ = None
-        მJⳆმWₙ = None
+        მJⳆმBₙ = [np.zeros(b.shape) for b in self.Bₙ]
+        მJⳆმWₙ = [np.zeros(w.shape) for w in self.Wₙ ]
 
         # TODO 12: Compute მJⳆმBₙ, მJⳆმWₙ over batch by summing მJⳆმBₙₘ, მJⳆმWₙₘ over points
         for xₘ, yₘ in zip(x_batch, y_batch):
             xₘ = xₘ[..., np.newaxis]                          # because we assume the point is a column vector (indexing x_batch gives row)
             
             # TODO 12.1: Get მJⳆმBₙₘ, მJⳆმWₙₘ for the point with backprop
-            მJⳆმBₙₘ, მJⳆმWₙₘ = None
+            მJⳆმBₙₘ, მJⳆმWₙₘ = self.backprop(xₘ, yₘ)
             
             # TODO 12.2: Add it to the total მJⳆმBₙ, მJⳆმWₙ
             for l in range(self.num_layers):
-                მJⳆმBₙ[l] += None
-                მJⳆმWₙ[l] += None
+                მJⳆმBₙ[l] += მJⳆმBₙₘ[l]
+                მJⳆმWₙ[l] += მJⳆმWₙₘ[l]
         
         # TODO 13: Perform parameter update for each layer
         self.Bₙ = [self.Bₙ[l] - α * მJⳆმBₙ[l] for l in range(self.num_layers)]      # gift
-        self.Wₙ = None
+        self.Wₙ = [self.Wₙ[l] - α * მJⳆმWₙ[l] for l in range(self.num_layers)]
         
         
 
@@ -119,7 +127,7 @@ class ClassificationNeuralNet():
             
             # TODO 14: Call gradient descent to perform an update for each batch (pass self.α)
             for x_batch, y_batch in zip(x_data_batches, y_data_batches):
-                None 
+                self.SGD(x_batch, y_batch , self.α) 
             
             # If eval_train is true, we add the accuracy to tqdm progress bar as computed by score
             if self.eval_train:    
@@ -134,7 +142,7 @@ class ClassificationNeuralNet():
         # compute the probability given by sigmoid for each x in x_val
         probs = np.array([self.feedforward(x).item() for x in x_val])
         # TODO 15: Round it with Numpy to get final predictions
-        return None
+        return np.round(probs)
             
     def score(self, x_val,y_val):  
         # compute the accuracy

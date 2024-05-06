@@ -110,7 +110,7 @@ def plot_classification(model, x_data, μ, σ):
     # Plot the decision boundaries and data points
     plt.style.use('dark_background')
     plt.figure(figsize=(9, 6), dpi=150)
-    plt.contourf(yy, xx, Z, alpha=0.5,  cmap=ListedColormap(('slategrey', 'red')))
+    plt.contourf(yy, xx, Z, alpha=0.5,  cmap=ListedColormap(('gray', 'red')))
     plt.title('Classifier Contours')
     plt.legend()
     plt.show()
